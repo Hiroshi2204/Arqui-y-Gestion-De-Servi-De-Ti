@@ -1,0 +1,38 @@
+flowchart LR
+
+    Portal["Portal / App"]
+
+    subgraph PAGAEDU["PagaEdu"]
+        Gateway["API Gateway"]
+        Cobranzas["Servicio de Cobranzas"]
+        BDCobranzas[("BD Cobranzas")]
+        Outbox["Outbox Relay"]
+        Bus["Bus de Eventos"]
+        Conciliacion["Conciliación"]
+        Notificaciones["Notificaciones"]
+        Reportes["Reportes"]
+    end
+
+    Agregador["Agregador de Pagos"]
+    Monolito["Monolito Legado"]
+
+    Portal -->|Invoca<br/>HTTPS| Gateway
+    Gateway -->|Enruta y protege<br/>REST / HTTPS| Cobranzas
+    Cobranzas -->|Lee / escribe<br/>SQL / JDBC sobre TLS| BDCobranzas
+    Cobranzas -->|Solicita autorización / captura<br/>REST / HTTPS + Idempotency-Key| Agregador
+    Cobranzas -->|Escribe eventos| Outbox
+    Outbox -->|Publica<br/>AMQP / TLS| Bus
+    Bus -->|Consume<br/>AMQP / TLS| Conciliacion
+    Bus -->|Consume<br/>AMQP / TLS| Notificaciones
+    Bus -->|Consume<br/>AMQP / TLS| Reportes
+    Cobranzas -.->|Reemplaza incrementalmente<br/>Strangler Fig| Monolito
+
+    classDef interno fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+    classDef datos fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef externo fill:#fee2e2,stroke:#dc2626,stroke-width:2px
+    classDef infraestructura fill:#ffedd5,stroke:#ea580c,stroke-width:2px
+
+    class Portal,Gateway,Cobranzas,Conciliacion,Notificaciones,Reportes interno
+    class BDCobranzas datos
+    class Agregador,Monolito externo
+    class Outbox,Bus infraestructura

@@ -1,0 +1,43 @@
+classDiagram
+
+    class PaymentApplicationService {
+        -RetryStrategy retryStrategy
+        +procesarPago()
+        +ejecutarReintento()
+    }
+
+    class RetryStrategy {
+        <<interface>>
+        +debeReintentar(error) boolean
+        +calcularEspera(int intento) int
+    }
+
+    class NoRetryStrategy {
+        +debeReintentar(error) boolean
+        +calcularEspera(int intento) int
+    }
+
+    class FixedDelayStrategy {
+        -int maxReintentos
+        -int demoraMs
+        +debeReintentar(error) boolean
+        +calcularEspera(int intento) int
+    }
+
+    class ExponentialBackoffStrategy {
+        -int maxReintentos
+        -int demoraInicialMs
+        +debeReintentar(error) boolean
+        +calcularEspera(int intento) int
+    }
+
+    class PaymentGatewayAdapter {
+        +procesarPago()
+    }
+
+    PaymentApplicationService --> RetryStrategy : usa
+    PaymentApplicationService --> PaymentGatewayAdapter : coordina
+
+    RetryStrategy <|.. NoRetryStrategy
+    RetryStrategy <|.. FixedDelayStrategy
+    RetryStrategy <|.. ExponentialBackoffStrategy

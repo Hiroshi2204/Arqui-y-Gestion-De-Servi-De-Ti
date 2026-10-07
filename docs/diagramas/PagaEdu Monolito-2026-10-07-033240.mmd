@@ -1,0 +1,55 @@
+flowchart LR
+
+    subgraph CLIENTES["Canales de acceso"]
+        Portal["Portal / App"]
+        Admin["Personal Administrativo"]
+    end
+
+    subgraph PAGAEDU["PagaEdu - Arquitectura Objetivo"]
+        Gateway["API Gateway"]
+
+        subgraph COBRANZAS["Servicio de Cobranzas Recurrentes"]
+            API["Payment API"]
+            Idempotencia["Idempotency Service"]
+            Aplicacion["Payment Application Service"]
+            Adapter["Payment Gateway Adapter"]
+            Outbox["Outbox Publisher / Relay"]
+        end
+
+        BDCobranzas[("BD Cobranzas")]
+        Bus["Bus de Eventos"]
+        Conciliacion["Servicio de Conciliación"]
+        Notificaciones["Servicio de Notificaciones"]
+        Reportes["Servicio de Reportes"]
+    end
+
+    Agregador["Agregador de Pagos"]
+    Identidad["Servicio de Identidad"]
+    Monolito["Monolito Legado"]
+
+    Portal -->|HTTPS| Gateway
+    Admin -->|HTTPS| Gateway
+    Gateway -->|REST / HTTPS| API
+    API --> Idempotencia
+    Idempotencia --> BDCobranzas
+    API --> Aplicacion
+    Aplicacion --> Adapter
+    Adapter -->|REST / HTTPS + Idempotency-Key| Agregador
+    Aplicacion -->|SQL| BDCobranzas
+    Aplicacion --> Outbox
+    Outbox -->|AMQP / TLS| Bus
+    Bus -->|Eventos| Conciliacion
+    Bus -->|Eventos| Notificaciones
+    Bus -->|Eventos| Reportes
+    Gateway -->|OIDC / HTTPS| Identidad
+    API -.->|Strangler Fig| Monolito
+
+    classDef interno fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+    classDef datos fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef externo fill:#fee2e2,stroke:#dc2626,stroke-width:2px
+    classDef infra fill:#ffedd5,stroke:#ea580c,stroke-width:2px
+
+    class Portal,Admin,Gateway,API,Idempotencia,Aplicacion,Adapter,Conciliacion,Notificaciones,Reportes interno
+    class BDCobranzas datos
+    class Agregador,Identidad,Monolito externo
+    class Outbox,Bus infra

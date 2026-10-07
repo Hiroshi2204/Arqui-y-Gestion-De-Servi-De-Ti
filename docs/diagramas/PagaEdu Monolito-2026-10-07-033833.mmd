@@ -1,0 +1,22 @@
+flowchart LR
+
+    Apoderado["Apoderado / Estudiante"]
+    Admin["Personal Administrativo"]
+
+    PagaEdu["PagaEdu<br/><br/>Sistema de gestión de<br/>recaudación y pagos"]
+
+    Agregador["Agregador de Pagos"]
+    Identidad["Servicio de Identidad"]
+    Comunicacion["Servicio de Comunicación"]
+
+    Apoderado -->|Consulta y paga<br/>HTTPS| PagaEdu
+    Admin -->|Administra cobros<br/>HTTPS| PagaEdu
+    PagaEdu -->|Solicita cargo<br/>REST / HTTPS| Agregador
+    PagaEdu -->|Valida identidad<br/>OIDC / HTTPS| Identidad
+    PagaEdu -->|Envía eventos de pago<br/>AMQP / TLS| Comunicacion
+
+    classDef principal fill:#dbeafe,stroke:#2563eb,stroke-width:3px
+    classDef externo fill:#fee2e2,stroke:#dc2626,stroke-width:2px
+
+    class PagaEdu principal
+    class Apoderado,Admin,Agregador,Identidad,Comunicacion externo

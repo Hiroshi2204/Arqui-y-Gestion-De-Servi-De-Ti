@@ -1,0 +1,40 @@
+sequenceDiagram
+    autonumber
+
+    actor Apoderado as Apoderado / Estudiante
+    participant API as API Gateway
+    participant Cobranza as Servicio de Cobranzas
+    participant Idem as Idempotency Service
+    participant BD as BD Cobranzas
+    participant Adapter as Payment Gateway Adapter
+    participant Agregador as Agregador de Pagos
+    participant Banco as Banco Emisor
+
+    Apoderado->>API: Solicita pago
+    API->>Cobranza: POST /pagos + Idempotency-Key
+
+    Cobranza->>Idem: Validar Idempotency-Key
+    Idem->>BD: Consultar clave
+
+    alt Clave no existe
+        BD-->>Idem: Clave disponible
+        Idem-->>Cobranza: Solicitud nueva
+
+        Cobranza->>BD: Registrar cobro pendiente
+        Cobranza->>Adapter: Procesar pago
+        Adapter->>Agregador: Solicitar autorización/captura
+        Agregador->>Banco: Validar y autorizar cargo
+        Banco-->>Agregador: Pago autorizado
+        Agregador-->>Adapter: Resultado del pago
+        Adapter-->>Cobranza: Pago aprobado
+
+        Cobranza->>BD: Actualizar cobro como aprobado
+        Cobranza-->>API: Resultado exitoso
+        API-->>Apoderado: Pago confirmado
+
+    else Clave ya procesada
+        BD-->>Idem: Clave encontrada
+        Idem-->>Cobranza: Devolver resultado previo
+        Cobranza-->>API: Resultado existente
+        API-->>Apoderado: Pago confirmado sin duplicar cargo
+    end

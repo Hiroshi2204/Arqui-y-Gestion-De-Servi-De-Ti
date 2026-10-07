@@ -1,0 +1,52 @@
+flowchart TB
+
+    subgraph PRESENTACION["Capa de Presentación"]
+        Portal["Portal / App"]
+        Admin["Personal Administrativo"]
+    end
+
+    subgraph MONOLITO["PagaEdu - Monolito en Capas"]
+        subgraph NEGOCIO["Capa de Lógica de Negocio"]
+            Matricula["Módulo de Matrícula"]
+            Facturacion["Módulo de Facturación"]
+            Notificaciones["Módulo de Notificaciones"]
+            Conciliacion["Módulo de Conciliación"]
+            Reportes["Módulo de Reportes"]
+        end
+        subgraph DATOS["Capa de Datos"]
+            MySQL[("Base de Datos MySQL Compartida")]
+        end
+    end
+
+    Agregador["Agregador de Pagos<br/>(Niubiz / Culqi / PagoEfectivo)"]
+    Bancos["Bancos Emisores"]
+
+    Portal --> Matricula
+    Portal --> Facturacion
+    Portal --> Reportes
+
+    Admin --> Matricula
+    Admin --> Facturacion
+    Admin --> Conciliacion
+    Admin --> Reportes
+
+    Facturacion -->|Llamada en memoria| Notificaciones
+
+    Matricula --> MySQL
+    Facturacion --> MySQL
+    Notificaciones --> MySQL
+    Conciliacion --> MySQL
+    Reportes --> MySQL
+
+    Facturacion -->|Integración síncrona| Agregador
+    Agregador --> Bancos
+
+    classDef app fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+    classDef negocio fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+    classDef datos fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef externo fill:#fee2e2,stroke:#dc2626,stroke-width:2px
+
+    class Portal,Admin app
+    class Matricula,Facturacion,Notificaciones,Conciliacion,Reportes negocio
+    class MySQL datos
+    class Agregador,Bancos externo

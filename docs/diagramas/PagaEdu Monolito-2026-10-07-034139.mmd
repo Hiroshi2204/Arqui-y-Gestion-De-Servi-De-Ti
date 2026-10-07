@@ -1,0 +1,45 @@
+flowchart TB
+
+    Gateway["API Gateway"]
+
+    subgraph COBRANZAS["Servicio de Cobranzas Recurrentes"]
+        Controller["Payment API Controller<br/><br/>Recibe solicitud<br/>Valida contrato<br/>Exige Idempotency-Key"]
+
+        Idempotency["Idempotency Service<br/><br/>Consulta / reserva clave<br/>Devuelve resultado previo<br/>ante reintentos"]
+
+        Application["Payment Application Service<br/><br/>Ejecuta caso de uso<br/>Gobierna transacción local<br/>Aplica política de reintento"]
+
+        Repository["Payment Repository<br/><br/>Persiste cobro<br/>Restricción UNIQUE"]
+
+        Adapter["Payment Gateway Adapter<br/><br/>Aísla contrato y protocolo<br/>del proveedor de pagos"]
+
+        Outbox["Outbox Publisher / Relay<br/><br/>Lee Outbox<br/>Publica eventos"]
+
+        DB[("BD Cobranzas<br/><br/>Cobros + Idempotency-Key + Outbox")]
+
+        Bus["Bus de Eventos"]
+    end
+
+    Agregador["Agregador de Pagos"]
+
+    Gateway -->|REST / HTTPS| Controller
+    Controller --> Idempotency
+    Idempotency -->|Consulta / reserva clave| Repository
+    Repository -->|SQL| DB
+    Idempotency --> Application
+    Application --> Repository
+    Application --> Adapter
+    Adapter -->|REST / HTTPS<br/>Idempotency-Key| Agregador
+    Application -->|Transacción local ACID| DB
+    DB -->|Outbox pendiente| Outbox
+    Outbox -->|AMQP / TLS| Bus
+
+    classDef componente fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+    classDef datos fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef externo fill:#fee2e2,stroke:#dc2626,stroke-width:2px
+    classDef infra fill:#ffedd5,stroke:#ea580c,stroke-width:2px
+
+    class Controller,Idempotency,Application,Repository,Adapter,Outbox componente
+    class DB datos
+    class Agregador externo
+    class Gateway,Bus infra
